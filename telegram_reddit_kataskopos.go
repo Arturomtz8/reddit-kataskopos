@@ -75,11 +75,11 @@ func init() {
 	functions.HTTP("HandleTelegramWebhook", HandleTelegramWebhook)
 }
 
-func HandleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
+func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
 	update, err := parseTelegramRequest(r)
 	if err != nil {
 		sendTextToTelegramChat(update.Message.Chat.Id, err.Error())
-		fmt.Printf("error parsing update, %s", err.Error())
+		log.Printf("error: %s", err.Error())
 		return
 	}
 	switch {
@@ -87,21 +87,22 @@ func HandleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 		sanitizedString, err := sanitize(update.Message.Text, searchCommand)
 		if err != nil {
 			sendTextToTelegramChat(update.Message.Chat.Id, err.Error())
-			fmt.Fprintf(w, "invald input")
+			log.Printf("error: %s", err.Error())
 			return
 		}
 
 		responseFunc, err := postIt(sanitizedString, update.Message.Chat.Id)
 		if err != nil {
 			sendTextToTelegramChat(update.Message.Chat.Id, err.Error())
-			fmt.Fprintf(w, "invalid input")
+			log.Printf("error: %s", err.Error())
 			return
 		}
-		fmt.Printf("successfully distributed to chat id %d, response from loop: %s", update.Message.Chat.Id, responseFunc)
+		log.Printf("successfully distributed to chat id %d, response from loop: %s", update.Message.Chat.Id, responseFunc)
 		return
 
 	default:
-		fmt.Println("invalid command")
+		log.Print("invalid command")
+		sendTextToTelegramChat(update.Message.Chat.Id, "use /search {subreddit}, e.g: /search python")
 		return
 	}
 
@@ -110,7 +111,7 @@ func HandleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 func parseTelegramRequest(r *http.Request) (*Update, error) {
 	var update Update
 	if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
-		fmt.Printf("could not decode incoming update %s", err.Error())
+		log.Printf("could not decode incoming update %s", err.Error())
 		return nil, err
 	}
 	return &update, nil
@@ -122,7 +123,8 @@ func sanitize(s, botCommand string) (string, error) {
 		if s[:lenBotCommand] == botCommand {
 			s = s[lenBotCommand:]
 			s = strings.TrimSpace(s)
-			fmt.Printf("type of value entered: %T\n", s)
+			log.Printf("sanitized string is: %s\n", s)
+			log.Printf("type of value entered: %T\n", s)
 		}
 	} else {
 		return "", errors.New("invalid value: you must enter /search {subreddit}")
@@ -199,7 +201,7 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
 
 		if postScore >= 50 && inTimeSpan(lastSevenDays, currentTime, createdDate) {
-			fmt.Println(createdDate)
+			log.Println(createdDate)
 			jsonResponse.Data.Children[i].Data.Link = "https://reddit.com" + jsonResponse.Data.Children[i].Data.Link
 
 			post := Post{Ups: jsonResponse.Data.Children[i].Data.Ups,
@@ -250,7 +252,7 @@ func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) 
 }
 
 func sendTextToTelegramChat(chatId int, text string) (string, error) {
-	fmt.Printf("sending %s to chat_id: %d", text, chatId)
+	log.Printf("sending %s to chat_id: %d \n", text, chatId)
 
 	var telegramApi string = "https://api.telegram.org/bot" + os.Getenv("GITHUB_BOT_TOKEN") + "/sendMessage"
 
@@ -261,18 +263,18 @@ func sendTextToTelegramChat(chatId int, text string) (string, error) {
 			"text":    {text},
 		})
 	if err != nil {
-		fmt.Printf("error when posting text to the chat: %s", err.Error())
+		log.Printf("error when posting text to the chat: %s", err.Error())
 		return "", err
 	}
 	defer response.Body.Close()
 	var bodyBytes, errRead = ioutil.ReadAll(response.Body)
 	if errRead != nil {
-		fmt.Printf("error parsing telegram answer %s", errRead.Error())
+		log.Printf("error parsing telegram answer %s", errRead.Error())
 		return "", err
 	}
 
 	bodyString := string(bodyBytes)
-	fmt.Printf("body of telegram response: %s", bodyString)
+	log.Printf("body of telegram response: %s \n", bodyString)
 	return bodyString, nil
 
 }
