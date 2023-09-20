@@ -161,7 +161,6 @@ func makeRequest(subreddit string) (FirstJSONLevel, error) {
 	req, err := http.NewRequest("GET", subreddit_url, nil)
 
 	if err != nil {
-		log.Printf("error: %s", err.Error())
 		return FirstJSONLevel{}, err
 	}
 
@@ -169,13 +168,11 @@ func makeRequest(subreddit string) (FirstJSONLevel, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
 		return FirstJSONLevel{}, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
 		return FirstJSONLevel{}, err
 	}
 
@@ -183,7 +180,6 @@ func makeRequest(subreddit string) (FirstJSONLevel, error) {
 
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
 		return FirstJSONLevel{}, err
 	}
 	return jsonResponse, nil
@@ -195,7 +191,6 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 
 	if len(jsonResponse.Data.Children) == 0 {
 		err := errors.New("No posts found in request to subreddit")
-		log.Printf("error: %s", err.Error())
 		return nil, err
 	}
 
@@ -216,8 +211,7 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 		}
 	}
 	if len(postsArray) == 0 {
-		err := errors.New("Not new posts in subreddit")
-		log.Printf("error: %s", err.Error())
+		err := errors.New("No new posts in subreddit")
 		return nil, err
 	}
 	return postsArray, nil
