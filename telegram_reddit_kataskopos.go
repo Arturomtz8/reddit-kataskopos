@@ -203,7 +203,7 @@ func parseJson(jsonResponse FirstJSONLevel, lastSevenDays, currentTime time.Time
 			jsonResponse.Data.Children[i].Data.Link = "https://reddit.com" + jsonResponse.Data.Children[i].Data.Link
 
 			post := Post{Ups: jsonResponse.Data.Children[i].Data.Ups,
-				Title: html.UnescapeString(jsonResponse.Data.Children[i].Data.Title),
+				Title: html.EscapeString(jsonResponse.Data.Children[i].Data.Title),
 				Link:  jsonResponse.Data.Children[i].Data.Link,
 			}
 			postsArray = append(postsArray, post)
