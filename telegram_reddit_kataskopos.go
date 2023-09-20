@@ -198,10 +198,11 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 		createdDateUnix := jsonResponse.Data.Children[i].Data.Created
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
 		postTitle := html.UnescapeString(jsonResponse.Data.Children[i].Data.Title)
-		fmt.Println(postTitle)
 
 		if postScore >= 50 && inTimeSpan(lastSevenDays, currentTime, createdDate) {
 			fmt.Println(createdDate)
+			fmt.Println("inside parsing json:")
+			fmt.Println(postTitle)
 
 			jsonResponse.Data.Children[i].Data.Link = "https://reddit.com" + jsonResponse.Data.Children[i].Data.Link
 
@@ -235,6 +236,8 @@ func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) 
 	}
 	for i := 0; i < postsLen; i++ {
 		post := postsArray[i]
+		fmt.Println("inside shuffling:")
+		fmt.Println(post.Title)
 		var report = template.Must(template.New("subrredits").Parse(templ))
 		buf := &bytes.Buffer{}
 		if err := report.Execute(buf, post); err != nil {
