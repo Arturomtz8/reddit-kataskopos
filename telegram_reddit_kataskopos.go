@@ -22,7 +22,7 @@ import (
 const (
 	searchCommand    string = "/search"
 	telegramTokenEnv string = "GITHUB_BOT_TOKEN"
-	defaultPostsLen  int    = 4
+	defaultPostsLen  int    = 5
 )
 
 const templ = `
@@ -228,7 +228,7 @@ func shufflePostsAndSend(postsArray []Post, chatId int) (string, error) {
 	} else {
 		postsLen = defaultPostsLen
 	}
-	for i := 1; i < postsLen; i++ {
+	for i := 0; i < postsLen; i++ {
 		post := postsArray[i]
 		var report = template.Must(template.New("subrredits").Parse(templ))
 		buf := &bytes.Buffer{}
