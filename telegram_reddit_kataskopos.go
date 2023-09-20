@@ -174,6 +174,10 @@ func makeRequest(subreddit string) (FirstJSONLevel, error) {
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("error: %s", err.Error())
+		return FirstJSONLevel{}, err
+	}
 
 	defer resp.Body.Close()
 
@@ -209,6 +213,7 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 				Link:  jsonResponse.Data.Children[i].Data.Link,
 			}
 			postsArray = append(postsArray, post)
+			log.Println(postsArray)
 		}
 	}
 	return postsArray, nil
@@ -244,6 +249,7 @@ func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) 
 	}
 	textPosts := strings.Join(newSlice, "\n-------------\n")
 	textPosts = html.UnescapeString(textPosts)
+	log.Println(textPosts)
 	responseFunc, err := sendTextToTelegramChat(chatId, textPosts)
 	if err != nil {
 		return "", err
