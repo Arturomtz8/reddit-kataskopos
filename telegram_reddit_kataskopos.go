@@ -139,11 +139,11 @@ func postIt(subreddit string, chatId int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	slicePosts, err := parseJson(jsonResponse, lastSevenDays, currentTime)
+	slicePosts, err := parseJson(&jsonResponse, lastSevenDays, currentTime)
 	if err != nil {
 		return "", err
 	}
-	responseFunc, err := shufflePostsAndSend(slicePosts, chatId)
+	responseFunc, err := shufflePostsAndSend(&slicePosts, chatId)
 	if err != nil {
 		return "", err
 	}
@@ -184,7 +184,7 @@ func makeRequest(subreddit string) (FirstJSONLevel, error) {
 
 }
 
-func parseJson(jsonResponse FirstJSONLevel, lastSevenDays, currentTime time.Time) ([]Post, error) {
+func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Time) ([]Post, error) {
 	var postsArray []Post
 
 	if len(jsonResponse.Data.Children) == 0 {
@@ -198,6 +198,8 @@ func parseJson(jsonResponse FirstJSONLevel, lastSevenDays, currentTime time.Time
 		createdDateUnix := jsonResponse.Data.Children[i].Data.Created
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
 		postTitle := html.UnescapeString(jsonResponse.Data.Children[i].Data.Title)
+		fmt.Println(postTitle)
+
 		if postScore >= 50 && inTimeSpan(lastSevenDays, currentTime, createdDate) {
 			fmt.Println(createdDate)
 
@@ -217,9 +219,10 @@ func inTimeSpan(lastSevenDays, currentTime, check time.Time) bool {
 	return check.After(lastSevenDays) && check.Before(currentTime)
 }
 
-func shufflePostsAndSend(postsArray []Post, chatId int) (string, error) {
+func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) {
 	var postsLen int
 	// shuffle data
+	postsArray := *postsArrayPointer
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(postsArray), func(i, j int) { postsArray[i], postsArray[j] = postsArray[j], postsArray[i] })
 
