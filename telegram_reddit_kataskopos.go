@@ -133,9 +133,13 @@ func getPosts(subreddit string, chatId int) (string, error) {
 	currentTime := time.Now()
 	lastSevenDays := currentTime.AddDate(0, 0, -7)
 
-	jsonResponse := makeRequest(subreddit)
+	jsonResponse, err := makeRequest(subreddit)
+	if err != nil {
+		log.Printf("error: %s", err.Error())
+		return "", err
+	}
 	slicePosts := parseJson(jsonResponse, lastSevenDays, currentTime)
-	_, err := shufflePostsAndSend(slicePosts, chatId)
+	_, err = shufflePostsAndSend(slicePosts, chatId)
 	if err != nil {
 		return "", err
 	}
@@ -143,33 +147,35 @@ func getPosts(subreddit string, chatId int) (string, error) {
 
 }
 
-func makeRequest(subreddit string) FirstJSONLevel {
+func makeRequest(subreddit string) (FirstJSONLevel, error) {
+	var jsonResponse FirstJSONLevel
 	client := &http.Client{}
 	subreddit_url := fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100", subreddit)
 	req, err := http.NewRequest("GET", subreddit_url, nil)
 
 	if err != nil {
-		panic(err)
+		log.Printf("error: %s", err.Error())
+		return jsonResponse, err
 	}
 
 	req.Header.Set("User-Agent", "bla")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		log.Printf("error: %s", err.Error())
+		return jsonResponse, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	defer resp.Body.Close()
 
-	var jsonResponse FirstJSONLevel
-
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error: %s", err.Error())
+		return jsonResponse, err
 	}
-	return jsonResponse
+	return jsonResponse, nil
 
 }
 
