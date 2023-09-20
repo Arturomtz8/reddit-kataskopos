@@ -22,7 +22,7 @@ import (
 const (
 	searchCommand    string = "/search"
 	telegramTokenEnv string = "GITHUB_BOT_TOKEN"
-	postsLen         int    = 4
+	defaultPostsLen  int    = 4
 )
 
 const templ = `
@@ -75,8 +75,9 @@ func init() {
 }
 
 func HandleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
-	var update, err = parseTelegramRequest(r)
+	update, err := parseTelegramRequest(r)
 	if err != nil {
+		sendTextToTelegramChat(update.Message.Chat.Id, err.Error())
 		fmt.Printf("error parsing update, %s", err.Error())
 		return
 	}
@@ -89,7 +90,7 @@ func HandleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		responseFunc, err := getPosts(sanitizedString, update.Message.Chat.Id)
+		responseFunc, err := postIt(sanitizedString, update.Message.Chat.Id)
 		if err != nil {
 			sendTextToTelegramChat(update.Message.Chat.Id, err.Error())
 			fmt.Fprintf(w, "invalid input")
@@ -123,39 +124,42 @@ func sanitize(s, botCommand string) (string, error) {
 			fmt.Printf("type of value entered: %T\n", s)
 		}
 	} else {
-		return "", errors.New("invalid value: you must enter /search {languague}")
+		return "", errors.New("invalid value: you must enter /search {subreddit}")
 	}
 	return s, nil
 
 }
 
-func getPosts(subreddit string, chatId int) (string, error) {
+func postIt(subreddit string, chatId int) (string, error) {
 	currentTime := time.Now()
 	lastSevenDays := currentTime.AddDate(0, 0, -7)
 
 	jsonResponse, err := makeRequest(subreddit)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
 		return "", err
 	}
-	slicePosts := parseJson(jsonResponse, lastSevenDays, currentTime)
-	_, err = shufflePostsAndSend(slicePosts, chatId)
+	slicePosts, err := parseJson(jsonResponse, lastSevenDays, currentTime)
 	if err != nil {
 		return "", err
 	}
-	return "success", nil
+	responseFunc, err := shufflePostsAndSend(slicePosts, chatId)
+	if err != nil {
+		return "", err
+	}
+	return responseFunc, nil
 
 }
 
 func makeRequest(subreddit string) (FirstJSONLevel, error) {
 	var jsonResponse FirstJSONLevel
+
 	client := &http.Client{}
 	subreddit_url := fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100", subreddit)
 	req, err := http.NewRequest("GET", subreddit_url, nil)
 
 	if err != nil {
 		log.Printf("error: %s", err.Error())
-		return jsonResponse, err
+		return FirstJSONLevel{}, err
 	}
 
 	req.Header.Set("User-Agent", "bla")
@@ -163,7 +167,7 @@ func makeRequest(subreddit string) (FirstJSONLevel, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("error: %s", err.Error())
-		return jsonResponse, err
+		return FirstJSONLevel{}, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -173,14 +177,20 @@ func makeRequest(subreddit string) (FirstJSONLevel, error) {
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
 		log.Printf("error: %s", err.Error())
-		return jsonResponse, err
+		return FirstJSONLevel{}, err
 	}
 	return jsonResponse, nil
 
 }
 
-func parseJson(jsonResponse FirstJSONLevel, lastSevenDays, currentTime time.Time) []Post {
+func parseJson(jsonResponse FirstJSONLevel, lastSevenDays, currentTime time.Time) ([]Post, error) {
 	var postsArray []Post
+
+	if len(jsonResponse.Data.Children) == 0 {
+		err := errors.New("Not enough posts in subreddit")
+		log.Printf("error: %s", err.Error())
+		return nil, err
+	}
 
 	for i := range jsonResponse.Data.Children {
 		postScore := jsonResponse.Data.Children[i].Data.Ups
@@ -198,7 +208,7 @@ func parseJson(jsonResponse FirstJSONLevel, lastSevenDays, currentTime time.Time
 			postsArray = append(postsArray, post)
 		}
 	}
-	return postsArray
+	return postsArray, nil
 }
 
 func inTimeSpan(lastSevenDays, currentTime, check time.Time) bool {
@@ -206,26 +216,34 @@ func inTimeSpan(lastSevenDays, currentTime, check time.Time) bool {
 }
 
 func shufflePostsAndSend(postsArray []Post, chatId int) (string, error) {
+	var postsLen int
 	// shuffle data
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(postsArray), func(i, j int) { postsArray[i], postsArray[j] = postsArray[j], postsArray[i] })
 
 	newSlice := make([]string, 0)
 
+	if len(postsArray) < defaultPostsLen {
+		postsLen = len(postsArray)
+	} else {
+		postsLen = defaultPostsLen
+	}
 	for i := 1; i <= postsLen; i++ {
 		post := postsArray[i]
 		var report = template.Must(template.New("subrredits").Parse(templ))
 		buf := &bytes.Buffer{}
 		if err := report.Execute(buf, post); err != nil {
-			sendTextToTelegramChat(chatId, err.Error())
 			return "", err
 		}
 		s := buf.String()
 		newSlice = append(newSlice, s)
 	}
 	textPosts := strings.Join(newSlice, "\n-------------\n")
-	sendTextToTelegramChat(chatId, textPosts)
-	return "finished", nil
+	responseFunc, err := sendTextToTelegramChat(chatId, textPosts)
+	if err != nil {
+		return "", err
+	}
+	return responseFunc, nil
 }
 
 func sendTextToTelegramChat(chatId int, text string) (string, error) {
