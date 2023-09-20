@@ -194,7 +194,7 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 	var postsArray []Post
 
 	if len(jsonResponse.Data.Children) == 0 {
-		err := errors.New("Not enough posts in subreddit")
+		err := errors.New("No posts found in request to subreddit")
 		log.Printf("error: %s", err.Error())
 		return nil, err
 	}
@@ -213,8 +213,12 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 				Link:  jsonResponse.Data.Children[i].Data.Link,
 			}
 			postsArray = append(postsArray, post)
-			log.Println(postsArray)
 		}
+	}
+	if len(postsArray) == 0 {
+		err := errors.New("Not new posts in subreddit")
+		log.Printf("error: %s", err.Error())
+		return nil, err
 	}
 	return postsArray, nil
 }
@@ -249,7 +253,7 @@ func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) 
 	}
 	textPosts := strings.Join(newSlice, "\n-------------\n")
 	textPosts = html.UnescapeString(textPosts)
-	log.Println(textPosts)
+	// log.Println(textPosts)
 	responseFunc, err := sendTextToTelegramChat(chatId, textPosts)
 	if err != nil {
 		return "", err
