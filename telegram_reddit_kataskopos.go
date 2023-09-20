@@ -1,4 +1,4 @@
-package main
+package reddit_kataskopos
 
 import (
 	"bytes"
