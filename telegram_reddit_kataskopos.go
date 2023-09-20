@@ -197,16 +197,16 @@ func parseJson(jsonResponse FirstJSONLevel, lastSevenDays, currentTime time.Time
 		postScore := jsonResponse.Data.Children[i].Data.Ups
 		createdDateUnix := jsonResponse.Data.Children[i].Data.Created
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
+		postTitle := html.UnescapeString(jsonResponse.Data.Children[i].Data.Title)
 		if postScore >= 50 && inTimeSpan(lastSevenDays, currentTime, createdDate) {
 			fmt.Println(createdDate)
 
 			jsonResponse.Data.Children[i].Data.Link = "https://reddit.com" + jsonResponse.Data.Children[i].Data.Link
 
 			post := Post{Ups: jsonResponse.Data.Children[i].Data.Ups,
-				Title: jsonResponse.Data.Children[i].Data.Title,
+				Title: postTitle, //jsonResponse.Data.Children[i].Data.Title,
 				Link:  jsonResponse.Data.Children[i].Data.Link,
 			}
-			post.Title = html.UnescapeString(post.Title)
 			postsArray = append(postsArray, post)
 		}
 	}
