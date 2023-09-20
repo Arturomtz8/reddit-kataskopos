@@ -56,5 +56,6 @@ Temporary Items
 ### macOS Patch ###
 # iCloud generated files
 *.icloud
+test_encoding.go
 
 # End of https://www.toptal.com/developers/gitignore/api/go,macos
