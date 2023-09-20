@@ -201,8 +201,8 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 
 		if postScore >= 50 && inTimeSpan(lastSevenDays, currentTime, createdDate) {
 			fmt.Println(createdDate)
-			fmt.Println("inside parsing json:")
-			fmt.Println(postTitle)
+			// fmt.Println("inside parsing json:")
+			// fmt.Println(postTitle)
 
 			jsonResponse.Data.Children[i].Data.Link = "https://reddit.com" + jsonResponse.Data.Children[i].Data.Link
 
@@ -244,9 +244,15 @@ func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) 
 			return "", err
 		}
 		s := buf.String()
+		fmt.Println("after using template")
+		fmt.Println(s)
+
 		newSlice = append(newSlice, s)
 	}
 	textPosts := strings.Join(newSlice, "\n-------------\n")
+	fmt.Println("Using again unescape string func")
+	textPosts = html.UnescapeString(textPosts)
+	fmt.Println(textPosts)
 	responseFunc, err := sendTextToTelegramChat(chatId, textPosts)
 	if err != nil {
 		return "", err
