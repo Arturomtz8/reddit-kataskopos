@@ -199,7 +199,7 @@ func parseJson(jsonResponse *FirstJSONLevel, lastTwoMonths, currentTime time.Tim
 		createdDateUnix := jsonResponse.Data.Children[i].Data.Created
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
 
-		if postScore >= 50 && inTimeSpan(lastTwoMonths, currentTime, createdDate) {
+		if postScore >= 27 && inTimeSpan(lastTwoMonths, currentTime, createdDate) {
 			log.Println(createdDate)
 			jsonResponse.Data.Children[i].Data.Link = "https://reddit.com" + jsonResponse.Data.Children[i].Data.Link
 
