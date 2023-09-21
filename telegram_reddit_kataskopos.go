@@ -135,13 +135,13 @@ func sanitize(s, botCommand string) (string, error) {
 
 func postIt(subreddit string, chatId int) (string, error) {
 	currentTime := time.Now()
-	lastSevenDays := currentTime.AddDate(0, 0, -7)
+	lastTwoMonths := currentTime.AddDate(0, 0, -60)
 
 	jsonResponse, err := makeRequest(subreddit)
 	if err != nil {
 		return "", err
 	}
-	slicePosts, err := parseJson(&jsonResponse, lastSevenDays, currentTime)
+	slicePosts, err := parseJson(&jsonResponse, lastTwoMonths, currentTime)
 	if err != nil {
 		return "", err
 	}
@@ -186,7 +186,7 @@ func makeRequest(subreddit string) (FirstJSONLevel, error) {
 
 }
 
-func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Time) ([]Post, error) {
+func parseJson(jsonResponse *FirstJSONLevel, lastTwoMonths, currentTime time.Time) ([]Post, error) {
 	var postsArray []Post
 
 	if len(jsonResponse.Data.Children) == 0 {
@@ -199,7 +199,7 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 		createdDateUnix := jsonResponse.Data.Children[i].Data.Created
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
 
-		if postScore >= 50 && inTimeSpan(lastSevenDays, currentTime, createdDate) {
+		if postScore >= 50 && inTimeSpan(lastTwoMonths, currentTime, createdDate) {
 			log.Println(createdDate)
 			jsonResponse.Data.Children[i].Data.Link = "https://reddit.com" + jsonResponse.Data.Children[i].Data.Link
 
@@ -217,8 +217,8 @@ func parseJson(jsonResponse *FirstJSONLevel, lastSevenDays, currentTime time.Tim
 	return postsArray, nil
 }
 
-func inTimeSpan(lastSevenDays, currentTime, check time.Time) bool {
-	return check.After(lastSevenDays) && check.Before(currentTime)
+func inTimeSpan(lastTwoMonths, currentTime, check time.Time) bool {
+	return check.After(lastTwoMonths) && check.Before(currentTime)
 }
 
 func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) {
