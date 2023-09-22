@@ -150,7 +150,7 @@ func postIt(subreddit string, chatId int) (string, error) {
 
 func getPosts(subreddit string) ([]Post, error) {
 	// the slice that will hold the recursive calls
-	var childrenSliceRecursive *[]PostSlice
+	var childrenSliceRecursive []PostSlice
 	var postsSlice []Post
 	currentTime := time.Now()
 	lastTwoMonths := currentTime.AddDate(0, 0, -60)
@@ -159,8 +159,8 @@ func getPosts(subreddit string) ([]Post, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("slice len of children", len(*childrenSlice))
-	for _, child := range *childrenSlice {
+	log.Println("slice len of children", len(childrenSlice))
+	for _, child := range childrenSlice {
 		postScore := child.Data.Ups
 		createdDateUnix := child.Data.Created
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
@@ -183,7 +183,7 @@ func getPosts(subreddit string) ([]Post, error) {
 	return postsSlice, nil
 }
 
-func makeRequest(subreddit, after string, iteration int, childrenSliceRecursive *[]PostSlice) (*[]PostSlice, error) {
+func makeRequest(subreddit, after string, iteration int, childrenSliceRecursive []PostSlice) ([]PostSlice, error) {
 	var jsonResponse JSONResponse
 	var subreddit_url string
 
@@ -229,7 +229,7 @@ func makeRequest(subreddit, after string, iteration int, childrenSliceRecursive 
 		childrenOnly := jsonResponse.Data.Children[i]
 		log.Println("titles from raw json:")
 		log.Println(jsonResponse.Data.Children[i].Data.Link)
-		*childrenSliceRecursive = append(*childrenSliceRecursive, childrenOnly)
+		childrenSliceRecursive = append(childrenSliceRecursive, childrenOnly)
 	}
 
 	resp.Body.Close()
