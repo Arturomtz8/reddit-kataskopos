@@ -24,7 +24,7 @@ const (
 	searchCommand    string = "/search"
 	telegramTokenEnv string = "GITHUB_BOT_TOKEN"
 	defaultPostsLen  int    = 5
-	timesToRecurse   int    = 6
+	timesToRecurse   int    = 7
 )
 
 const templ = `
@@ -183,9 +183,10 @@ func getPosts(subreddit string) ([]Post, error) {
 	return postsSlice, nil
 }
 
-func makeRequest(subreddit, after string, iteration int, childrenSliceRecursive []PostSlice) ([]PostSlice, error) {
+func makeRequest(subreddit, after string, iteration int, childrenSliceRecursiveInside []PostSlice) ([]PostSlice, error) {
 	var jsonResponse JSONResponse
 	var subreddit_url string
+	log.Printf("inside recursion len of slice before append: %d\n", len(childrenSliceRecursiveInside))
 
 	if iteration == timesToRecurse {
 		subreddit_url = fmt.Sprintf("https://reddit.com/r/%s/.json?limit=100", subreddit)
@@ -195,46 +196,45 @@ func makeRequest(subreddit, after string, iteration int, childrenSliceRecursive 
 		subreddit_url = fmt.Sprintf("https://reddit.com/r/%s/.json?limit=100&after=%s", subreddit, jsonResponse.Data.Offset)
 		log.Printf("subreddit url searched: %s", subreddit_url)
 	} else {
-		return childrenSliceRecursive, nil
+		return childrenSliceRecursiveInside, nil
 	}
 
 	log.Println("number of iteration", iteration)
-	client := http.Client{}
+	client := &http.Client{}
 	req, err := http.NewRequest("GET", subreddit_url, nil)
 	if err != nil {
-		return childrenSliceRecursive, err
+		return childrenSliceRecursiveInside, err
 	}
 
 	req.Header.Set("User-Agent", after)
 	resp, err := client.Do(req)
 	if err != nil {
-		return childrenSliceRecursive, err
+		return childrenSliceRecursiveInside, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return childrenSliceRecursive, err
+		return childrenSliceRecursiveInside, err
 	}
 
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
-		return childrenSliceRecursive, err
+		return childrenSliceRecursiveInside, err
 	}
 
 	if len(jsonResponse.Data.Children) == 0 {
-		return childrenSliceRecursive, errors.New("I couldn't get anything, make sure the subreddit exists")
+		return childrenSliceRecursiveInside, errors.New("I couldn't get anything, make sure the subreddit exists")
 	}
 
 	for i := range jsonResponse.Data.Children {
 		childrenOnly := jsonResponse.Data.Children[i]
-		log.Println("titles from raw json:")
-		log.Println(jsonResponse.Data.Children[i].Data.Link)
-		childrenSliceRecursive = append(childrenSliceRecursive, childrenOnly)
+		childrenSliceRecursiveInside = append(childrenSliceRecursiveInside, childrenOnly)
 	}
 
 	resp.Body.Close()
-	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1, childrenSliceRecursive)
-	return childrenSliceRecursive, nil
+	log.Printf("inside recursion len of slice after append and into another recursion: %d\n", len(childrenSliceRecursiveInside))
+	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1, childrenSliceRecursiveInside)
+	return childrenSliceRecursiveInside, nil
 
 }
 
