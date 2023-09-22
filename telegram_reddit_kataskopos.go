@@ -186,7 +186,7 @@ func getPosts(subreddit string) ([]Post, error) {
 }
 
 func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
-	var jsonResponse *JSONResponse
+	var jsonResponse JSONResponse
 	var subreddit_url string
 
 	if iteration == timesToRecurse {
