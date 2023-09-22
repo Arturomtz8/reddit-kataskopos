@@ -24,6 +24,7 @@ const (
 	searchCommand    string = "/search"
 	telegramTokenEnv string = "GITHUB_BOT_TOKEN"
 	defaultPostsLen  int    = 5
+	timesToRecurse   int    = 10
 )
 
 const templ = `
@@ -32,19 +33,20 @@ const templ = `
   ⭐: {{.Ups}}
 `
 
-type FirstJSONLevel struct {
-	Data SecondJSONLevel `json:"data"`
+type JSONResponse struct {
+	Data Data `json:"data"`
 }
 
-type SecondJSONLevel struct {
-	Children []ThirdJSONLevel `json:"children"`
+type Data struct {
+	Children []PostSlice `json:"children"`
+	Offset   string      `json:"after"`
 }
 
-type ThirdJSONLevel struct {
-	Data FinalJSONLevel `json:"data"`
+type PostSlice struct {
+	Data PostData `json:"data"`
 }
 
-type FinalJSONLevel struct {
+type PostData struct {
 	Ups     int     `json:"ups"`
 	Title   string  `json:"title"`
 	Link    string  `json:"permalink"`
@@ -134,87 +136,105 @@ func sanitize(s, botCommand string) (string, error) {
 }
 
 func postIt(subreddit string, chatId int) (string, error) {
+	postsSlice, err := getPosts(subreddit)
+	if err != nil {
+		return "", err
+	}
+	responseFunc, err := shufflePostsAndSend(&postsSlice, chatId)
+	if err != nil {
+		return "", err
+	}
+	return responseFunc, err
+
+}
+
+func getPosts(subreddit string) ([]Post, error) {
+	var postsSlice []Post
 	currentTime := time.Now()
 	lastTwoMonths := currentTime.AddDate(0, 0, -60)
 
-	jsonResponse, err := makeRequest(subreddit)
+	childrenSlice, err := makeRequest(subreddit, "no", timesToRecurse)
 	if err != nil {
-		return "", err
-	}
-	slicePosts, err := parseJson(&jsonResponse, lastTwoMonths, currentTime)
-	if err != nil {
-		return "", err
-	}
-	responseFunc, err := shufflePostsAndSend(&slicePosts, chatId)
-	if err != nil {
-		return "", err
-	}
-	return responseFunc, nil
-
-}
-
-func makeRequest(subreddit string) (FirstJSONLevel, error) {
-	var jsonResponse FirstJSONLevel
-
-	client := &http.Client{}
-	subreddit_url := fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100", subreddit)
-	req, err := http.NewRequest("GET", subreddit_url, nil)
-
-	if err != nil {
-		return FirstJSONLevel{}, err
-	}
-
-	req.Header.Set("User-Agent", "bla")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return FirstJSONLevel{}, err
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return FirstJSONLevel{}, err
-	}
-
-	defer resp.Body.Close()
-
-	err = json.Unmarshal(body, &jsonResponse)
-	if err != nil {
-		return FirstJSONLevel{}, err
-	}
-	return jsonResponse, nil
-
-}
-
-func parseJson(jsonResponse *FirstJSONLevel, lastTwoMonths, currentTime time.Time) ([]Post, error) {
-	var postsArray []Post
-
-	if len(jsonResponse.Data.Children) == 0 {
-		err := errors.New("No posts found in request to subreddit")
 		return nil, err
 	}
-
-	for i := range jsonResponse.Data.Children {
-		postScore := jsonResponse.Data.Children[i].Data.Ups
-		createdDateUnix := jsonResponse.Data.Children[i].Data.Created
+	log.Println("slice len of children", len(childrenSlice))
+	// if len(childrenSlice) == 0 {
+	// 	err := errors.New("No posts found in request to subreddit")
+	// 	return nil, err
+	// }
+	for _, child := range childrenSlice {
+		postScore := child.Data.Ups
+		createdDateUnix := child.Data.Created
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
 
 		if postScore >= 25 && inTimeSpan(lastTwoMonths, currentTime, createdDate) {
 			log.Println(createdDate)
-			jsonResponse.Data.Children[i].Data.Link = "https://reddit.com" + jsonResponse.Data.Children[i].Data.Link
+			child.Data.Link = "https://reddit.com" + child.Data.Link
 
-			post := Post{Ups: jsonResponse.Data.Children[i].Data.Ups,
-				Title: jsonResponse.Data.Children[i].Data.Title,
-				Link:  jsonResponse.Data.Children[i].Data.Link,
+			post := Post{Ups: child.Data.Ups,
+				Title: child.Data.Title,
+				Link:  child.Data.Link,
 			}
-			postsArray = append(postsArray, post)
+			postsSlice = append(postsSlice, post)
 		}
 	}
-	if len(postsArray) == 0 {
-		err := errors.New("No new posts in subreddit")
+	if len(postsSlice) == 0 {
+		err := errors.New("No interesting posts in subreddit")
 		return nil, err
 	}
-	return postsArray, nil
+	return postsSlice, nil
+}
+
+func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
+	var jsonResponse JSONResponse
+	var subreddit_url string
+	var childrenSlice []PostSlice
+
+	if iteration == timesToRecurse {
+		subreddit_url = fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100", subreddit)
+	} else if iteration > 0 {
+		jsonResponse.Data.Offset = after
+		subreddit_url = fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100&after=%s", subreddit, jsonResponse.Data.Offset)
+	} else {
+		return childrenSlice, nil
+	}
+
+	log.Println("number of iteration", iteration)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", subreddit_url, nil)
+	if err != nil {
+		return childrenSlice, err
+	}
+
+	req.Header.Set("User-Agent", "bla")
+	resp, err := client.Do(req)
+	if err != nil {
+		return childrenSlice, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return childrenSlice, err
+	}
+
+	err = json.Unmarshal(body, &jsonResponse)
+	if err != nil {
+		return childrenSlice, err
+	}
+
+	if len(jsonResponse.Data.Children) == 0 {
+		return childrenSlice, errors.New("No interesting posts in subreddit")
+	}
+
+	for i := range jsonResponse.Data.Children {
+		childrenOnly := jsonResponse.Data.Children[i]
+		childrenSlice = append(childrenSlice, childrenOnly)
+	}
+
+	resp.Body.Close()
+	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1)
+	return childrenSlice, nil
+
 }
 
 func inTimeSpan(lastTwoMonths, currentTime, check time.Time) bool {
