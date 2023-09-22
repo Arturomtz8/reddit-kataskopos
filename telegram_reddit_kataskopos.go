@@ -208,7 +208,7 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 		return childrenSliceRecursive, err
 	}
 
-	req.Header.Set("User-Agent", "bla")
+	req.Header.Set("User-Agent", after)
 	resp, err := client.Do(req)
 	if err != nil {
 		return childrenSliceRecursive, err
