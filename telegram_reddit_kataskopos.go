@@ -73,9 +73,6 @@ type Chat struct {
 	Id int `json:"id"`
 }
 
-// the slice that will hold the recursive calls
-var childrenSliceRecursive *[]PostSlice
-
 func init() {
 	functions.HTTP("HandleTelegramWebhook", HandleTelegramWebhook)
 }
@@ -152,11 +149,13 @@ func postIt(subreddit string, chatId int) (string, error) {
 }
 
 func getPosts(subreddit string) ([]Post, error) {
+	// the slice that will hold the recursive calls
+	var childrenSliceRecursive *[]PostSlice
 	var postsSlice []Post
 	currentTime := time.Now()
 	lastTwoMonths := currentTime.AddDate(0, 0, -60)
 
-	childrenSlice, err := makeRequest(subreddit, "no", timesToRecurse)
+	childrenSlice, err := makeRequest(subreddit, "no", timesToRecurse, childrenSliceRecursive)
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +183,8 @@ func getPosts(subreddit string) ([]Post, error) {
 	return postsSlice, nil
 }
 
-func makeRequest(subreddit, after string, iteration int) (*[]PostSlice, error) {
-	var jsonResponse *JSONResponse
+func makeRequest(subreddit, after string, iteration int, childrenSliceRecursive *[]PostSlice) (*[]PostSlice, error) {
+	var jsonResponse JSONResponse
 	var subreddit_url string
 
 	if iteration == timesToRecurse {
@@ -234,7 +233,7 @@ func makeRequest(subreddit, after string, iteration int) (*[]PostSlice, error) {
 	}
 
 	resp.Body.Close()
-	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1)
+	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1, childrenSliceRecursive)
 	return childrenSliceRecursive, nil
 
 }
