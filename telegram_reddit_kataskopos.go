@@ -79,12 +79,6 @@ func init() {
 
 // the slice that will hold the recursive calls, at the beginning always set it to nil
 // because it can have the results from previous queries
-// var childrenSliceRecursive []PostSlice
-// var childrenSliceRecursive = []PostSlice{}
-
-// var newPostSlice = createNewPostSlice()
-// var childrenSliceRecursive = append([]PostSlice{}, newPostSlice)
-// var childrenSliceRecursive = make([]PostSlice, 0)
 var childrenSliceRecursive []PostSlice = nil
 
 func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
@@ -111,7 +105,7 @@ func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("successfully distributed to chat id %d, response from loop: %s", update.Message.Chat.Id, responseFunc)
 		// set the slice to nil to remove all
-		childrenSliceRecursive = nil
+		// childrenSliceRecursive = nil
 		return
 
 	default:
@@ -191,23 +185,6 @@ func getPosts(subreddit string) ([]Post, error) {
 		return nil, err
 	}
 	return postsSlice, nil
-}
-
-func createNewPostSlice() PostSlice {
-	// Create a new instance of PostData
-	postData := PostData{
-		Ups:     0,
-		Title:   "",
-		Link:    "",
-		Created: 0.0,
-	}
-
-	// Create a new instance of PostSlice and assign the PostData
-	postSlice := PostSlice{
-		Data: postData,
-	}
-
-	return postSlice
 }
 
 func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
