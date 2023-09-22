@@ -77,8 +77,9 @@ func init() {
 	functions.HTTP("HandleTelegramWebhook", HandleTelegramWebhook)
 }
 
-// the slice that will hold the recursive calls
-var childrenSliceRecursive []PostSlice
+// the slice that will hold the recursive calls, at the beginning always set it to nil
+// because it google func it can have the results from previous queries
+var childrenSliceRecursive []PostSlice = nil
 
 func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
 	update, err := parseTelegramRequest(r)
@@ -233,7 +234,7 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 
 	resp.Body.Close()
 	log.Printf("inside recursion len of slice after append and into another recursion: %d\n", len(childrenSliceRecursive))
-	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1, childrenSliceRecursive)
+	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1)
 	return childrenSliceRecursive, nil
 
 }
