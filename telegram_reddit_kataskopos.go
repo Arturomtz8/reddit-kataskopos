@@ -186,7 +186,7 @@ func getPosts(subreddit string) ([]Post, error) {
 }
 
 func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
-	var jsonResponse JSONResponse
+	var jsonResponse *JSONResponse
 	var subreddit_url string
 
 	if iteration == timesToRecurse {
@@ -229,10 +229,11 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 
 	for i := range jsonResponse.Data.Children {
 		childrenOnly := jsonResponse.Data.Children[i]
+		log.Printf("num of times iterated: %d\n", i)
 		childrenSliceRecursive = append(childrenSliceRecursive, childrenOnly)
 	}
 
-	resp.Body.Close()
+	defer resp.Body.Close()
 	log.Printf("inside recursion len of slice after append and into another recursion: %d\n", len(childrenSliceRecursive))
 	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1)
 	return childrenSliceRecursive, nil
