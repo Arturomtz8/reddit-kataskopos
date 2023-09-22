@@ -24,7 +24,7 @@ const (
 	searchCommand    string = "/search"
 	telegramTokenEnv string = "GITHUB_BOT_TOKEN"
 	defaultPostsLen  int    = 5
-	timesToRecurse   int    = 10
+	timesToRecurse   int    = 6
 )
 
 const templ = `
@@ -171,7 +171,7 @@ func getPosts(subreddit string) ([]Post, error) {
 		createdDate := time.Time(time.Unix(int64(createdDateUnix), 0))
 
 		if postScore >= 25 && inTimeSpan(lastTwoMonths, currentTime, createdDate) {
-			log.Println(createdDate)
+			// log.Println(createdDate)
 			child.Data.Link = "https://reddit.com" + child.Data.Link
 
 			post := Post{Ups: child.Data.Ups,
@@ -194,9 +194,11 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 
 	if iteration == timesToRecurse {
 		subreddit_url = fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100", subreddit)
+		log.Printf("subreddit url searched: %s", subreddit_url)
 	} else if iteration > 0 {
 		jsonResponse.Data.Offset = after
 		subreddit_url = fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100&after=%s", subreddit, jsonResponse.Data.Offset)
+		log.Printf("subreddit url searched: %s", subreddit_url)
 	} else {
 		return childrenSliceRecursive, nil
 	}
