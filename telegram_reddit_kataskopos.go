@@ -105,11 +105,13 @@ func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("successfully distributed to chat id %d, response from loop: %s", update.Message.Chat.Id, responseFunc)
 		// set the slice to nil to remove all
-		// childrenSliceRecursive = nil
+		childrenSliceRecursive = nil
 		return
 
 	default:
 		log.Print("invalid command")
+		// set the slice to nil to remove all
+		childrenSliceRecursive = nil
 		sendTextToTelegramChat(update.Message.Chat.Id, "use /search {subreddit}, e.g: /search python")
 		return
 	}
