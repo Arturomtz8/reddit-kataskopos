@@ -24,7 +24,7 @@ const (
 	searchCommand    string = "/search"
 	telegramTokenEnv string = "GITHUB_BOT_TOKEN"
 	defaultPostsLen  int    = 5
-	timesToRecurse   int    = 7
+	timesToRecurse   int    = 10
 )
 
 const templ = `
@@ -79,9 +79,11 @@ func init() {
 
 // the slice that will hold the recursive calls, at the beginning always set it to nil
 // because it can have the results from previous queries
-var childrenSliceRecursive []PostSlice = nil
+var childrenSliceRecursive []PostSlice
 
 func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
+	// set the slice to nil to remove all
+	childrenSliceRecursive = nil
 	update, err := parseTelegramRequest(r)
 	if err != nil {
 		sendTextToTelegramChat(update.Message.Chat.Id, err.Error())
