@@ -80,16 +80,11 @@ func init() {
 // the slice that will hold the recursive calls, at the beginning always set it to nil
 // because it can have the results from previous queries
 // var childrenSliceRecursive []PostSlice
-var childrenSliceRecursive = []PostSlice{}
+// var childrenSliceRecursive = []PostSlice{}
 
 // var newPostSlice = createNewPostSlice()
-// var childrenSliceRecursive = append(childrenSliceRecursive, newPostSlice)
-
-// var childrenSliceRecursive []PostSlice = []newPostSlice{}
-
-// for i := 0; i < 5; i++ {
-// 	newPostSlice, _ := createNewPostSliceAndPostData()
-// 	postSliceSlice = append(postSliceSlice, newPostSlice)
+// var childrenSliceRecursive = append([]PostSlice{}, newPostSlice)
+var childrenSliceRecursive = make([]PostSlice, 0)
 
 func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
 	update, err := parseTelegramRequest(r)
