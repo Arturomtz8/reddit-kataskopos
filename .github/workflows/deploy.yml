@@ -25,10 +25,9 @@ jobs:
       uses: 'google-github-actions/setup-gcloud@v1'
       with:
         version: '>= 363.0.0'
-        install_components: 'beta'
     - name: 'Use gcloud CLI to deploy a cloud function gen 2'
       run: |
-        gcloudfunctions deploy reddit-kataskopos-handler \
+        gcloud functions deploy reddit-kataskopos-handler \
         --gen2 \
         --region=us-central1 \
         --runtime=go120 \
