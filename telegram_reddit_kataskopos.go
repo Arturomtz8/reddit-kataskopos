@@ -84,7 +84,8 @@ func init() {
 
 // var newPostSlice = createNewPostSlice()
 // var childrenSliceRecursive = append([]PostSlice{}, newPostSlice)
-var childrenSliceRecursive = make([]PostSlice, 0)
+// var childrenSliceRecursive = make([]PostSlice, 0)
+var childrenSliceRecursive []PostSlice = nil
 
 func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
 	update, err := parseTelegramRequest(r)
@@ -109,6 +110,8 @@ func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Printf("successfully distributed to chat id %d, response from loop: %s", update.Message.Chat.Id, responseFunc)
+		// set the slice to nil to remove all
+		childrenSliceRecursive = nil
 		return
 
 	default:
