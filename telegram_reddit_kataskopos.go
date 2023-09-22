@@ -73,6 +73,9 @@ type Chat struct {
 	Id int `json:"id"`
 }
 
+// the slice that will hold the recursive calls
+var childrenSliceRecursive []PostSlice
+
 func init() {
 	functions.HTTP("HandleTelegramWebhook", HandleTelegramWebhook)
 }
@@ -188,7 +191,6 @@ func getPosts(subreddit string) ([]Post, error) {
 func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 	var jsonResponse JSONResponse
 	var subreddit_url string
-	var childrenSlice []PostSlice
 
 	if iteration == timesToRecurse {
 		subreddit_url = fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100", subreddit)
@@ -196,44 +198,44 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 		jsonResponse.Data.Offset = after
 		subreddit_url = fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100&after=%s", subreddit, jsonResponse.Data.Offset)
 	} else {
-		return childrenSlice, nil
+		return childrenSliceRecursive, nil
 	}
 
 	log.Println("number of iteration", iteration)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", subreddit_url, nil)
 	if err != nil {
-		return childrenSlice, err
+		return childrenSliceRecursive, err
 	}
 
 	req.Header.Set("User-Agent", "bla")
 	resp, err := client.Do(req)
 	if err != nil {
-		return childrenSlice, err
+		return childrenSliceRecursive, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return childrenSlice, err
+		return childrenSliceRecursive, err
 	}
 
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
-		return childrenSlice, err
+		return childrenSliceRecursive, err
 	}
 
 	if len(jsonResponse.Data.Children) == 0 {
-		return childrenSlice, errors.New("No interesting posts in subreddit")
+		return childrenSliceRecursive, errors.New("No interesting posts in subreddit")
 	}
 
 	for i := range jsonResponse.Data.Children {
 		childrenOnly := jsonResponse.Data.Children[i]
-		childrenSlice = append(childrenSlice, childrenOnly)
+		childrenSliceRecursive = append(childrenSliceRecursive, childrenOnly)
 	}
 
 	resp.Body.Close()
 	makeRequest(subreddit, jsonResponse.Data.Offset, iteration-1)
-	return childrenSlice, nil
+	return childrenSliceRecursive, nil
 
 }
 
