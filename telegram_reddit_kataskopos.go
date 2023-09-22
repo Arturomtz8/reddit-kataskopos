@@ -78,8 +78,18 @@ func init() {
 }
 
 // the slice that will hold the recursive calls, at the beginning always set it to nil
-// because it google func it can have the results from previous queries
-var childrenSliceRecursive []PostSlice = nil
+// because it can have the results from previous queries
+// var childrenSliceRecursive []PostSlice
+var childrenSliceRecursive = []PostSlice{}
+
+// var newPostSlice = createNewPostSlice()
+// var childrenSliceRecursive = append(childrenSliceRecursive, newPostSlice)
+
+// var childrenSliceRecursive []PostSlice = []newPostSlice{}
+
+// for i := 0; i < 5; i++ {
+// 	newPostSlice, _ := createNewPostSliceAndPostData()
+// 	postSliceSlice = append(postSliceSlice, newPostSlice)
 
 func HandleTelegramWebhook(_ http.ResponseWriter, r *http.Request) {
 	update, err := parseTelegramRequest(r)
@@ -185,6 +195,23 @@ func getPosts(subreddit string) ([]Post, error) {
 	return postsSlice, nil
 }
 
+func createNewPostSlice() PostSlice {
+	// Create a new instance of PostData
+	postData := PostData{
+		Ups:     0,
+		Title:   "",
+		Link:    "",
+		Created: 0.0,
+	}
+
+	// Create a new instance of PostSlice and assign the PostData
+	postSlice := PostSlice{
+		Data: postData,
+	}
+
+	return postSlice
+}
+
 func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 	var jsonResponse JSONResponse
 	var subreddit_url string
@@ -229,7 +256,7 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 
 	for i := range jsonResponse.Data.Children {
 		childrenOnly := jsonResponse.Data.Children[i]
-		log.Printf("num of times iterated: %d\n", i)
+		// log.Printf("num of times iterated: %d\n", i)
 		childrenSliceRecursive = append(childrenSliceRecursive, childrenOnly)
 	}
 
