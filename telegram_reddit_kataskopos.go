@@ -161,10 +161,6 @@ func getPosts(subreddit string) ([]Post, error) {
 		return nil, err
 	}
 	log.Println("slice len of children", len(childrenSlice))
-	// if len(childrenSlice) == 0 {
-	// 	err := errors.New("No posts found in request to subreddit")
-	// 	return nil, err
-	// }
 	for _, child := range childrenSlice {
 		postScore := child.Data.Ups
 		createdDateUnix := child.Data.Created
@@ -193,18 +189,18 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 	var subreddit_url string
 
 	if iteration == timesToRecurse {
-		subreddit_url = fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100", subreddit)
+		subreddit_url = fmt.Sprintf("https://reddit.com/r/%s/.json?limit=100", subreddit)
 		log.Printf("subreddit url searched: %s", subreddit_url)
 	} else if iteration > 0 {
 		jsonResponse.Data.Offset = after
-		subreddit_url = fmt.Sprintf("https://old.reddit.com/r/%s/.json?limit=100&after=%s", subreddit, jsonResponse.Data.Offset)
+		subreddit_url = fmt.Sprintf("https://reddit.com/r/%s/.json?limit=100&after=%s", subreddit, jsonResponse.Data.Offset)
 		log.Printf("subreddit url searched: %s", subreddit_url)
 	} else {
 		return childrenSliceRecursive, nil
 	}
 
 	log.Println("number of iteration", iteration)
-	client := &http.Client{}
+	client := http.Client{}
 	req, err := http.NewRequest("GET", subreddit_url, nil)
 	if err != nil {
 		return childrenSliceRecursive, err
@@ -227,7 +223,7 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 	}
 
 	if len(jsonResponse.Data.Children) == 0 {
-		return childrenSliceRecursive, errors.New("No interesting posts in subreddit")
+		return childrenSliceRecursive, errors.New("I couldn't get anything, make sure the subreddit exists")
 	}
 
 	for i := range jsonResponse.Data.Children {
