@@ -25,7 +25,7 @@ jobs:
       uses: 'google-github-actions/setup-gcloud@v1'
       with:
         version: '>= 363.0.0'
-    - name: 'Use gcloud CLI to deploy a cloud function gen 2'
+    - name: 'Use gcloud CLI to deploy a cloud function gen 1'
       run: |
         gcloud functions deploy kataskopos-handler \
         --region=us-central1 \
