@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -219,7 +219,7 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 		return childrenSliceRecursive, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return childrenSliceRecursive, err
 	}
@@ -300,7 +300,7 @@ func sendTextToTelegramChat(chatId int, text string) (string, error) {
 		return "", err
 	}
 	defer response.Body.Close()
-	var bodyBytes, errRead = ioutil.ReadAll(response.Body)
+	var bodyBytes, errRead = io.ReadAll(response.Body)
 	if errRead != nil {
 		log.Printf("error parsing telegram answer %s", errRead.Error())
 		return "", err
