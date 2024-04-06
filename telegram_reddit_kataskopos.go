@@ -228,6 +228,8 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 	}
 
 	fmt.Println("********************read response body and trying to unmarshal")
+	fmt.Println("Status", resp.Status)
+	fmt.Println("body", body)
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
 		return childrenSliceRecursive, err
