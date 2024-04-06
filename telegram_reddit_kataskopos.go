@@ -213,8 +213,8 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 	if err != nil {
 		return childrenSliceRecursive, err
 	}
-
-	req.Header.Set("User-Agent", after)
+	req.SetBasicAuth(os.Getenv("REDDIT_USER"), os.Getenv("REDDIT_PSW"))
+	// req.Header.Set("User-Agent", after)
 	resp, err := client.Do(req)
 	if err != nil {
 		return childrenSliceRecursive, err
