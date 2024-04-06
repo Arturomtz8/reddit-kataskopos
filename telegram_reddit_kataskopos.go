@@ -199,6 +199,7 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 		subreddit_url = fmt.Sprintf("https://reddit.com/r/%s/.json?limit=100", subreddit)
 		log.Printf("subreddit url searched: %s", subreddit_url)
 	} else if iteration > 0 {
+		fmt.Println("after", after)
 		jsonResponse.Data.Offset = after
 		subreddit_url = fmt.Sprintf("https://reddit.com/r/%s/.json?limit=100&after=%s", subreddit, jsonResponse.Data.Offset)
 		log.Printf("subreddit url searched: %s", subreddit_url)
@@ -219,11 +220,14 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 		return childrenSliceRecursive, err
 	}
 
+	fmt.Println("*****************request done")
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return childrenSliceRecursive, err
 	}
 
+	fmt.Println("********************read response body and trying to unmarshal")
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
 		return childrenSliceRecursive, err
