@@ -237,7 +237,7 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 
 	fmt.Println("********************read response body and trying to unmarshal")
 	fmt.Println("Status", resp.Status)
-	if resp.Status != "200" {
+	if resp.Status != "200 OK" {
 		time.Sleep(4 * time.Second)
 		makeRequest(subreddit, "no", timesToRecurse)
 	}
