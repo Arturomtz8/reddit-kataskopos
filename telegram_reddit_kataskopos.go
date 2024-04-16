@@ -241,8 +241,9 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 
 	fmt.Println("********************read response body and trying to unmarshal")
 	fmt.Println("Status", resp.Status)
-	if resp.Status != "200 OK" {
-		return childrenSliceRecursive, errors.New("Too many requests, try again later")
+	if resp.Status != "200" {
+		time.Sleep(4 * time.Second)
+		makeRequest(subreddit, "no", timesToRecurse)
 	}
 	fmt.Println("body", string(body))
 	err = json.Unmarshal(body, &jsonResponse)
