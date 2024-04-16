@@ -29,6 +29,8 @@ const (
 
 const templ = `
   Title: {{.Title}}
+  Text: {{.Text}}
+  Preview: {{.Preview}}
   Link: {{.Link}}
   ⭐: {{.Ups}}
 `
@@ -47,16 +49,20 @@ type PostSlice struct {
 }
 
 type PostData struct {
-	Ups     int     `json:"ups"`
-	Title   string  `json:"title"`
-	Link    string  `json:"permalink"`
-	Created float64 `json:"created"`
+	Ups                int     `json:"ups"`
+	Title              string  `json:"title"`
+	SelfText           string  `json:"selftext"`
+	Link               string  `json:"permalink"`
+	Created            float64 `json:"created"`
+	UrlOverridenByDest string  `json:"url_overridden_by_dest"`
 }
 
 type Post struct {
-	Ups   int
-	Title string
-	Link  string
+	Title   string
+	Text    string
+	Preview string
+	Link    string
+	Ups     int
 }
 
 type Update struct {
@@ -178,8 +184,10 @@ func getPosts(subreddit string) ([]Post, error) {
 			child.Data.Link = "https://reddit.com" + child.Data.Link
 
 			post := Post{Ups: child.Data.Ups,
-				Title: child.Data.Title,
-				Link:  child.Data.Link,
+				Title:   child.Data.Title,
+				Text:    child.Data.SelfText,
+				Preview: child.Data.UrlOverridenByDest,
+				Link:    child.Data.Link,
 			}
 			postsSlice = append(postsSlice, post)
 		}
@@ -229,7 +237,11 @@ func makeRequest(subreddit, after string, iteration int) ([]PostSlice, error) {
 
 	fmt.Println("********************read response body and trying to unmarshal")
 	fmt.Println("Status", resp.Status)
-	fmt.Println("body", body)
+	if resp.Status != "200" {
+		time.Sleep(4 * time.Second)
+		makeRequest(subreddit, "no", timesToRecurse)
+	}
+	fmt.Println("body", string(body))
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
 		return childrenSliceRecursive, err
