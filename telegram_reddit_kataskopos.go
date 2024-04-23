@@ -273,12 +273,13 @@ func inTimeSpan(lastTwoMonths, currentTime, check time.Time) bool {
 
 func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) {
 	var postsLen int
+	var responseFunc string
 	// shuffle data
 	postsArray := *postsArrayPointer
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(postsArray), func(i, j int) { postsArray[i], postsArray[j] = postsArray[j], postsArray[i] })
 
-	newSlice := make([]string, 0)
+	// newSlice := make([]string, 0)
 
 	if len(postsArray) < defaultPostsLen {
 		postsLen = len(postsArray)
@@ -292,16 +293,23 @@ func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) 
 		if err := report.Execute(buf, post); err != nil {
 			return "", err
 		}
-		s := buf.String()
-		newSlice = append(newSlice, s)
+		// log.Println(textPosts)
+		bufferString := buf.String()
+		bufferString = html.UnescapeString(bufferString)
+		responseFunc, err := sendTextToTelegramChat(chatId, bufferString)
+		if err != nil {
+			return responseFunc, err
+		}
+		// s := buf.String()
+		// newSlice = append(newSlice, s)
 	}
-	textPosts := strings.Join(newSlice, "\n-------------\n")
-	textPosts = html.UnescapeString(textPosts)
-	// log.Println(textPosts)
-	responseFunc, err := sendTextToTelegramChat(chatId, textPosts)
-	if err != nil {
-		return "", err
-	}
+	// textPosts := strings.Join(newSlice, "\n-------------\n")
+	// textPosts = html.UnescapeString(textPosts)
+	// // log.Println(textPosts)
+	// responseFunc, err := sendTextToTelegramChat(chatId, textPosts)
+	// if err != nil {
+	// 	return "", err
+	// }
 	return responseFunc, nil
 }
 
