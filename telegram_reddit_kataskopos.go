@@ -291,7 +291,7 @@ func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) 
 		var report = template.Must(template.New("subrredits").Parse(templ))
 		buf := &bytes.Buffer{}
 		if err := report.Execute(buf, post); err != nil {
-			return "", err
+			return "reddit", err
 		}
 		// log.Println(textPosts)
 		bufferString := buf.String()
