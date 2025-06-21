@@ -305,7 +305,6 @@ func shufflePostsAndSend(postsArrayPointer *[]Post, chatId int) (string, error) 
 	}
 	// textPosts := strings.Join(newSlice, "\n-------------\n")
 	// textPosts = html.UnescapeString(textPosts)
-	// // log.Println(textPosts)
 	// responseFunc, err := sendTextToTelegramChat(chatId, textPosts)
 	// if err != nil {
 	// 	return "", err
